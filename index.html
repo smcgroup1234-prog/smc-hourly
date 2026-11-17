@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#172A46">
+  <title>SMC Hourly Production</title>
+  <link rel="icon" href="https://raw.githubusercontent.com/chakkawan01702-commits/Logo-smc/main/SMC_favicon_128.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --side:#172A46; --side2:#1F3557; --bg:#F3F5F9; --card:#fff; --line:#E3E8EF; --line2:#D5DCE6; --soft:#F7F9FC;
+      --text:#0F1F3A; --text2:#334155; --muted:#64748B; --dim:#94A3B8;
+      --navy:#1E3A6E; --red:#DC2F3C; --red2:#B91C2B; --green:#16A34A; --amber:#E08A00; --blue:#2563EB;
+      --radius:14px; --shadow:0 1px 2px rgba(15,31,58,.04),0 4px 14px rgba(15,31,58,.05);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    [hidden]{display:none!important}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','IBM Plex Sans Thai',system-ui,sans-serif;font-size:16px;-webkit-font-smoothing:antialiased}
+    button,input,select,textarea{font-family:inherit;color:inherit;font-size:inherit}
+    .num{font-variant-numeric:tabular-nums}
+    svg.i{width:20px;height:20px;flex:none}
+
+    /* ---------- Top bar ---------- */
+    .top{position:sticky;top:0;z-index:30;background:var(--side);color:#fff;display:flex;align-items:center;gap:16px;padding:10px 18px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand img{width:40px;height:40px;border-radius:10px;background:#fff;padding:3px;object-fit:contain}
+    .brand b{display:block;font-size:18px;font-weight:800;letter-spacing:.5px;line-height:1.1}
+    .brand small{display:block;font-size:10px;letter-spacing:1.2px;color:#C9D4E5;font-weight:600}
+    .tabs{display:flex;gap:6px;background:rgba(255,255,255,.06);padding:4px;border-radius:12px}
+    .tabs button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:9px;font-weight:600;font-size:15px;color:#C9D4E5}
+    .tabs button.on{background:#fff;color:var(--side)}
+    .tabs button svg{width:17px;height:17px}
+    .top-r{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .conn{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#C9D4E5}
+    .conn i{width:9px;height:9px;border-radius:50%;background:#94A3B8}
+    .conn.live i{background:#22C55E;box-shadow:0 0 0 4px rgba(34,197,94,.2)}
+    .conn.off i{background:#EF4444}
+    .chip-btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:99px;background:rgba(255,255,255,.1);font-size:14px;font-weight:500}
+    .chip-btn:hover{background:rgba(255,255,255,.18)}
+    .chip-btn svg{width:16px;height:16px}
+    .acc{font-size:13px;color:#C9D4E5}
+    .icon-btn{all:unset;cursor:pointer;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:#C9D4E5;border:1px solid rgba(255,255,255,.15)}
+    .icon-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+
+    /* ---------- Main ---------- */
+    main{padding:16px 18px 90px;max-width:1500px;margin:0 auto}
+    .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .bar .sp{flex:1}
+    .linebadge{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:9px 18px;border-radius:11px}
+    .dnav{display:flex;gap:6px;align-items:center}
+    .dnav button{width:46px;height:46px;border:1px solid var(--line2);background:#fff;border-radius:11px;font-size:22px;cursor:pointer;color:var(--text2)}
+    .dlabel{color:var(--muted);font-size:14px}
+    .in{height:46px;border:1px solid var(--line2);border-radius:11px;background:#fff;padding:0 13px;width:100%;outline:none;transition:.15s}
+    .in:focus{border-color:#7C9CDB;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+    textarea.in{height:auto;padding:10px 13px;resize:vertical}
+    select.in{appearance:none;cursor:pointer;padding-right:36px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230F1F3A' stroke-width='2.4'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/16px}
+    .in.sel{width:auto;min-width:160px;font-weight:600}
+    .in.date{width:auto}
+    .in.big{height:58px;font-size:26px;font-weight:700;text-align:right}
+    .in.sm{height:42px}
+    .in.r{text-align:right}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 18px;border-radius:11px;border:1px solid var(--line2);background:#fff;font-weight:600;cursor:pointer;transition:.15s}
+    .btn:hover{border-color:#B8C3D3;box-shadow:var(--shadow)}
+    .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+    .btn.primary:hover{background:var(--red2)}
+    .btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+    .btn.ghost{background:transparent}
+    .btn.block{width:100%;height:56px;font-size:18px}
+    .btn[aria-busy=true]{opacity:.65;pointer-events:none}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
+    .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    h3{margin:0;font-size:16px;font-weight:700}
+    .legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+    .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+    /* ---------- KPI ---------- */
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow)}
+    .kpi small{display:block;color:var(--muted);font-size:12px;font-weight:600}
+    .kpi b{display:block;font-size:26px;font-weight:700;margin:3px 0 1px}
+    .kpi span{font-size:12.5px;color:var(--muted)}
+    .pbar{height:6px;background:#EDF1F6;border-radius:99px;overflow:hidden;margin-top:6px}
+    .pbar i{display:block;height:100%;background:var(--navy);border-radius:99px}
+    .c-good{color:var(--green)}.c-warn{color:var(--amber)}.c-bad{color:var(--red)}.c-na{color:var(--dim)}
+
+    /* ---------- Entry layout ---------- */
+    .ent{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(360px,1fr);gap:14px;align-items:start}
+    .slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+    .slot{all:unset;box-sizing:border-box;cursor:pointer;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:8px 10px;min-height:86px;display:flex;flex-direction:column;gap:1px;position:relative;transition:.12s}
+    .slot .t{font-weight:700;font-size:16px}
+    .slot .pa{font-size:12.5px;color:var(--muted)}
+    .slot .pa i{font-style:normal;font-weight:700;color:var(--dim);margin-right:3px}
+    .slot .pc{font-size:12px;font-weight:700;margin-top:auto}
+    .slot.future{background:var(--soft);opacity:.6}
+    .slot.done{border-left:5px solid var(--dim)}
+    .slot.done.good{border-left-color:var(--green)} .slot.done.good .pc{color:var(--green)}
+    .slot.done.warn{border-left-color:var(--amber)} .slot.done.warn .pc{color:var(--amber)}
+    .slot.done.bad{border-left-color:var(--red)} .slot.done.bad .pc{color:var(--red)}
+    .slot.done.ex{border-left-color:var(--blue)}
+    .slot.miss{border:1.5px dashed var(--red);background:#FFF5F6}
+    .slot.miss .pc{color:var(--red)}
+    .slot.current{border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+    .slot.current .pc.now{color:var(--blue)}
+    .slot.sel{outline:3px solid var(--navy);outline-offset:1px}
+    .slot .bdd{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--red)}
+
+    .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+    .ph h2{margin:0;font-size:24px}
+    .ph small{color:var(--muted);font-size:13px}
+    .tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;white-space:nowrap}
+    .tag.past{background:#EEF1F6;color:var(--text2)} .tag.current{background:#E6EEFF;color:#1D4ED8} .tag.future{background:#F1F5F9;color:var(--muted)}
+    .fl{display:block;font-size:13px;font-weight:600;color:var(--text2);margin:12px 0 6px}
+    .fl .req{color:var(--red);font-weight:700}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .ro{height:58px;border-radius:11px;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 14px;font-size:22px;font-weight:700;color:var(--text2)}
+    .ro.none{font-size:14px;font-weight:500;color:var(--muted)}
+    .achbox{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding:10px 14px;border-radius:11px;background:var(--soft)}
+    .achbox span{color:var(--muted);font-size:14px}
+    .achbox b{font-size:26px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+    .chipb{all:unset;cursor:pointer;padding:9px 15px;border-radius:99px;border:1px solid var(--line2);font-size:14px;color:var(--text2);background:#fff}
+    .chipb.on{background:var(--navy);border-color:var(--navy);color:#fff}
+    .switch{display:flex;align-items:center;gap:12px;margin:14px 0 4px;font-weight:600;cursor:pointer;user-select:none}
+    .switch input{display:none}
+    .switch span{width:48px;height:28px;border-radius:99px;background:#CBD5E1;position:relative;flex:none;transition:.2s}
+    .switch span:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s}
+    .switch input:checked + span{background:var(--red)}
+    .switch input:checked + span:after{left:23px}
+    .bd{border:1px solid #F3B4BA;background:#FFF8F8;border-radius:12px;padding:2px 14px 14px;margin-top:8px}
+    .seg{display:flex;gap:6px;margin-top:12px}
+    .seg button{flex:1;height:44px;border:1px solid var(--line2);background:#fff;border-radius:10px;font-weight:600;cursor:pointer}
+    .seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .exist{background:#FFF8EB;border:1px solid #F5D9A6;color:#8A5300;border-radius:11px;padding:9px 13px;font-size:14px;margin-bottom:4px}
+    .info{background:var(--soft);border:1px dashed var(--line2);border-radius:12px;padding:16px;color:var(--text2);line-height:1.7}
+    .err{color:var(--red);font-weight:600;min-height:22px;margin:10px 0 8px;font-size:14px}
+    .empty{padding:30px;text-align:center;color:var(--muted)}
+
+    /* ---------- Plan ---------- */
+    .fill{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+    .fill .fl{margin-top:0}
+    .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .tblw{overflow:auto;border:1px solid var(--line);border-radius:11px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 10px;border-bottom:1px solid #EEF2F6;text-align:left;white-space:nowrap}
+    th{background:#F8FAFC;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.4px;position:sticky;top:0;z-index:1}
+    td.r,th.r{text-align:right}
+    td.t{font-weight:700}
+    td.t small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
+    tr.chg td{background:#FFFBEB}
+    tr.nd td.t{color:var(--blue)}
+    .pt td:nth-child(2){width:50%}
+    .pt td:nth-child(3){width:180px}
+    .savebar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:#fff;border-top:1px solid var(--line);padding:10px 18px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:flex-end;gap:14px;box-shadow:0 -6px 18px rgba(15,31,58,.06)}
+    .savebar span{color:var(--muted);font-size:14px}
+    .savebar span.dirty{color:#B45309;font-weight:600}
+
+    /* ---------- Dashboard ---------- */
+    .upd{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+    .upd i{width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.2)}
+    .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-bottom:14px}
+    .lc{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border:1px solid var(--line);border-top:4px solid #CBD5E1;border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px;transition:.15s}
+    .lc:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,31,58,.09)}
+    .lc.good{border-top-color:var(--green)} .lc.warn{border-top-color:var(--amber)} .lc.bad{border-top-color:var(--red)}
+    .lc.alarm{border-color:#F3B4BA;animation:alarm 1.8s ease-in-out infinite}
+    @keyframes alarm{50%{box-shadow:0 0 0 4px rgba(220,47,60,.16)}}
+    .lc-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .lc-n{font-size:20px;font-weight:800}
+    .lc-p{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px}
+    .lc-p b{color:var(--text2)}
+    .lc-m{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+    .lc-a{font-size:36px;font-weight:800;line-height:1;letter-spacing:-.5px}
+    .lc-a small{font-size:12px;font-weight:600;color:var(--muted);margin-left:4px;letter-spacing:0}
+    .lc-v{text-align:right;font-size:12px;color:var(--muted);line-height:1.4}
+    .lc-v b{display:block;font-size:15px;color:var(--text)}
+    .lc-f{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+    .strip{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:2px}
+    .strip i{height:18px;border-radius:3px;background:#EDF1F6}
+    .strip i.good{background:var(--green)} .strip i.warn{background:var(--amber)} .strip i.bad{background:var(--red)} .strip i.ex{background:var(--blue)}
+    .strip i.plan{background:#D6E4F5}
+    .strip i.miss{background:#fff;box-shadow:inset 0 0 0 1.5px var(--red)}
+    .strip i.cur{box-shadow:0 0 0 2px var(--navy)}
+    .strip-lb{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-top:-5px}
+    .bdgs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .bdg{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:7px;white-space:nowrap}
+    .bdg.red{background:#FDECEE;color:#C81E2E} .bdg.amber{background:#FFF4DE;color:#B45309} .bdg.gray{background:#EEF1F6;color:var(--muted)}
+    .dgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+    .par{display:grid;grid-template-columns:120px minmax(0,1fr) 54px;gap:8px 10px;align-items:center;font-size:14px}
+    .par .bar2{height:14px;background:#EDF1F6;border-radius:99px;overflow:hidden}
+    .par .bar2 i{display:block;height:100%;background:var(--navy);border-radius:99px}
+    .pill{display:inline-block;padding:3px 9px;border-radius:7px;font-size:12px;font-weight:700}
+    .pill.open{background:#FDECEE;color:#C81E2E} .pill.done{background:#E8F7EE;color:#15803D}
+    .chart{width:100%;min-height:260px}
+    .chart svg{display:block}
+    .hint{color:var(--muted);font-size:13px;margin:0}
+    td.wrap{white-space:normal;min-width:160px}
+    @media (max-width:1000px){ .dgrid{grid-template-columns:1fr} }
+
+    /* ---------- Login / setup ---------- */
+    .center{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#172A46,#2B4D80)}
+    .lcard{width:min(440px,100%);background:#fff;border-radius:20px;padding:30px 28px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+    .lcard .logo{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+    .lcard .logo img{width:54px;height:54px;border-radius:12px;border:1px solid var(--line);padding:3px}
+    .lcard h1{margin:0;font-size:22px}
+    .lcard p{margin:2px 0 0;color:var(--muted);font-size:14px}
+    .lcard code{background:var(--soft);padding:2px 6px;border-radius:5px;font-size:13px}
+
+    /* ---------- Modal / toast ---------- */
+    #modal{position:fixed;inset:0;z-index:60;display:none;background:rgba(15,31,58,.5);place-items:center;padding:16px}
+    #modal.show{display:grid}
+    .md{width:min(420px,100%);background:#fff;border-radius:18px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+    .md h3{font-size:19px;margin-bottom:6px}
+    .md p{color:var(--text2);margin:6px 0 14px;line-height:1.6}
+    .md .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+    .dots{display:flex;justify-content:center;gap:14px;margin:16px 0}
+    .dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--navy)}
+    .dots i.on{background:var(--navy)}
+    .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .pad button{height:62px;border-radius:14px;border:1px solid var(--line2);background:#fff;font-size:24px;font-weight:600;cursor:pointer}
+    .pad button:active{background:var(--soft)}
+    .pad button.ok{background:var(--navy);color:#fff;border-color:var(--navy)}
+    #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(30px);opacity:0;visibility:hidden;z-index:70;background:#0F1F3A;color:#fff;padding:13px 20px;border-radius:12px;font-weight:600;transition:.25s;max-width:90vw;box-shadow:0 10px 26px rgba(0,0,0,.25)}
+    #toast.show{opacity:1;visibility:visible;transform:translateX(-50%)}
+    #toast.ok{background:#15803D} #toast.err{background:#B91C2B}
+    .spin{width:34px;height:34px;border-radius:50%;border:4px solid #E5EAF1;border-top-color:var(--red);animation:sp .9s linear infinite;margin:30px auto}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    /* ---------- Responsive (แท็บเล็ตแนวตั้ง / มือถือ) ---------- */
+    @media (max-width:1000px){
+      .ent{grid-template-columns:1fr}
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .fill{grid-template-columns:1fr 1fr}
+      .fill .btn{grid-column:1/-1}
+    }
+    @media (max-width:640px){
+      .slots{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .acc{display:none}
+      .tabs{width:100%}
+      .tabs button{flex:1;justify-content:center}
+      main{padding:12px 12px 90px}
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================================
+ *  ตั้งค่า — ใส่ค่าจาก Supabase › Project Settings › API
+ *  - SUPABASE_URL      : Project URL
+ *  - SUPABASE_ANON_KEY : anon / publishable key (ห้ามใช้ service_role key เด็ดขาด)
+ *  DAY_START_HOUR ต้องตรงกับฝั่ง SQL (8 = วันผลิตเริ่ม 08:00)
+ * ========================================================================== */
+const CONFIG = {
+  SUPABASE_URL: 'https://https://abcdefghijkl.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_AbCdEf123456',
+  LOGO_URL: 'https://raw.githubusercontent.com/chakkawan01702-commits/Logo-smc/main/SMC_favicon_128.png',
+  DAY_START_HOUR: 8,
+  ACH_GOOD: 0.95,                 // ≥ 95% เขียว
+  ACH_WARN: 0.85,                 // ≥ 85% เหลือง · ต่ำกว่า = แดง + บังคับเลือกเหตุผล
+  PIN_IDLE_MIN: 15,               // เมนูแผนรวมล็อกเองหลังไม่ได้ใช้ 15 นาที
+  BACK_DAYS: 1,                   // บัญชีไลน์แก้ย้อนหลังได้กี่วันผลิต (ต้องตรงกับ SQL)
+  REASONS: ['เครื่องเสีย', 'รอวัตถุดิบ', 'เปลี่ยน Product', 'คนไม่ครบ', 'ปัญหาคุณภาพ', 'อื่นๆ']
+};
+
+/* ============================================================================
+ *  Utilities
+ * ========================================================================== */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const root = $('#root');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const num = v => (v === null || v === undefined || v === '' || !isFinite(Number(v))) ? null : Number(v);
+const fmt = (v, d = 0) => num(v) === null ? '–' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d });
+const pct = v => (v === null || !isFinite(v)) ? '–' : (v * 100).toFixed(1) + '%';
+const achCls = r => r === null || !isFinite(r) ? 'na' : r >= CONFIG.ACH_GOOD ? 'good' : r >= CONFIG.ACH_WARN ? 'warn' : 'bad';
+const TH_MS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const TH_D = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+const HOURS = Array.from({ length: 24 }, (_, i) => (i + CONFIG.DAY_START_HOUR) % 24);   // 08 → 07
+const hk = h => (h - CONFIG.DAY_START_HOUR + 24) % 24;
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } };
+const t5 = v => v ? String(v).slice(0, 5) : '';
+const ICON = {
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  dash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  out: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg>'
+};
+
+/** เวลาไทยปัจจุบัน (ไม่ขึ้นกับ Time zone ของแท็บเล็ต) */
+function bkkNow() {
+  const p = {};
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) % 24, min: Number(p.minute) };
+}
+function addDays(k, n) { const d = new Date(k + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+/** วันผลิตปัจจุบัน: ก่อน 08:00 = วันผลิตของเมื่อวาน */
+function curProd() { const n = bkkNow(); return { date: n.hour < CONFIG.DAY_START_HOUR ? addDays(n.date, -1) : n.date, hour: n.hour }; }
+function slotState(date, h) {
+  const c = curProd();
+  if (date < c.date) return 'past';
+  if (date > c.date) return 'future';
+  const a = hk(h), b = hk(c.hour);
+  return a < b ? 'past' : a === b ? 'current' : 'future';
+}
+function slotLabel(h) { return `${pad(h)}.00 – ${pad((h + 1) % 24)}.00`; }
+function dateLong(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `วัน${TH_D[wd]}ที่ ${d} ${TH_MS[m - 1]} ${y + 543}`;
+}
+function dateShort(k) { const [y, m, d] = k.split('-').map(Number); return `${d} ${TH_MS[m - 1]} ${String(y + 543).slice(2)}`; }
+function timeOf(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(d);
+}
+function errMsg(e) {
+  const m = (e && (e.message || e.error_description)) || String(e);
+  if (/Failed to fetch|NetworkError|Load failed|network/i.test(m)) return 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ — ลองใหม่อีกครั้ง';
+  if (/JWT|expired|not authenticated/i.test(m)) return 'เซสชันหมดอายุ — กรุณาเข้าสู่ระบบใหม่';
+  if (/Invalid login credentials/i.test(m)) return 'รหัสผ่านไม่ถูกต้อง';
+  return m;
+}
+
+/* ============================================================================
+ *  UI helpers: toast / modal
+ * ========================================================================== */
+function toast(msg, kind = '') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show ' + kind;
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.className = ''; }, kind === 'err' ? 6000 : 3000);
+}
+function openModal(html) { const m = $('#modal'); m.innerHTML = `<div class="md">${html}</div>`; m.classList.add('show'); return m; }
+function closeModal() { const m = $('#modal'); m.classList.remove('show'); m.innerHTML = ''; }
+function ask(title, body, okText = 'ยืนยัน', cancelText = 'ยกเลิก') {
+  return new Promise(res => {
+    const m = openModal(`<h3>${esc(title)}</h3><p>${body}</p><div class="acts"><button class="btn" data-a="no">${esc(cancelText)}</button><button class="btn navy" data-a="ok">${esc(okText)}</button></div>`);
+    m.querySelector('[data-a=no]').onclick = () => { closeModal(); res(false); };
+    m.querySelector('[data-a=ok]').onclick = () => { closeModal(); res(true); };
+  });
+}
+function askName(force) {
+  return new Promise(res => {
+    const m = openModal(`<h3>ชื่อผู้บันทึก</h3><p>ใช้ระบุว่าใครเป็นคนบันทึกข้อมูล (จำไว้ในแท็บเล็ตเครื่องนี้ เปลี่ยนได้ที่ปุ่มชื่อด้านบน)</p>
+      <input class="in" id="nmIn" maxlength="40" placeholder="ชื่อ-นามสกุล หรือชื่อเล่น" value="${esc(S.by)}">
+      <p class="err" id="nmErr"></p>
+      <div class="acts">${force ? '' : '<button class="btn" data-a="no">ยกเลิก</button>'}<button class="btn navy" data-a="ok">บันทึกชื่อ</button></div>`);
+    const inp = m.querySelector('#nmIn');
+    setTimeout(() => inp.focus(), 50);
+    const ok = () => {
+      const v = inp.value.trim();
+      if (!v) { m.querySelector('#nmErr').textContent = 'กรุณาใส่ชื่อ'; return; }
+      S.by = v; lsSet('smc_hr_by', v); renderByChip(); closeModal(); res(true);
+    };
+    m.querySelector('[data-a=ok]').onclick = ok;
+    inp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+    const no = m.querySelector('[data-a=no]');
+    if (no) no.onclick = () => { closeModal(); res(false); };
+  });
+}
+/** แป้นกดรหัสเมนูแผนรวม (ตรวจกับฐานข้อมูล) */
+function askPin() {
+  return new Promise(res => {
+    let v = '';
+    const m = openModal(`<h3>เมนูแผนรวม</h3><p style="margin-bottom:0">ใส่รหัสเพื่อเข้าเมนูตั้งแผน</p>
+      <div class="dots" id="pinDots"></div><p class="err" id="pinErr" style="text-align:center;margin:0 0 10px"></p>
+      <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}
+        <button data-k="back" aria-label="ลบ">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="ยืนยัน">✓</button></div>
+      <div class="acts"><button class="btn ghost" data-a="no">ยกเลิก</button></div>`);
+    const paint = () => { m.querySelector('#pinDots').innerHTML = Array.from({ length: Math.max(4, v.length) }, (_, i) => `<i class="${i < v.length ? 'on' : ''}"></i>`).join(''); };
+    const done = ok => { document.removeEventListener('keydown', kb); closeModal(); res(ok); };
+    const submit = async () => {
+      if (!v) return;
+      const btn = m.querySelector('[data-k=ok]');
+      btn.setAttribute('aria-busy', 'true');
+      const { data, error } = await sb.rpc('verify_plan_pin', { p_pin: v });
+      btn.removeAttribute('aria-busy');
+      if (error) { m.querySelector('#pinErr').textContent = errMsg(error); return; }
+      if (!data) { m.querySelector('#pinErr').textContent = 'รหัสไม่ถูกต้อง'; v = ''; paint(); return; }
+      S.pin = v; S.pinAt = Date.now(); done(true);
+    };
+    const key = k => {
+      m.querySelector('#pinErr').textContent = '';
+      if (k === 'back') v = v.slice(0, -1);
+      else if (k === 'ok') return submit();
+      else if (v.length < 8) v += k;
+      paint();
+    };
+    const kb = e => { if (/^\d$/.test(e.key)) key(e.key); else if (e.key === 'Backspace') key('back'); else if (e.key === 'Enter') key('ok'); else if (e.key === 'Escape') done(false); };
+    document.addEventListener('keydown', kb);
+    m.querySelectorAll('[data-k]').forEach(b => b.onclick = () => key(b.dataset.k));
+    m.querySelector('[data-a=no]').onclick = () => done(false);
+    paint();
+  });
+}
+
+/* ============================================================================
+ *  State
+ * ========================================================================== */
+const S = {
+  acc: null, lines: [], view: 'entry',
+  line: null, date: null, follow: true, recs: {}, sel: null, form: null, dirty: false, seq: 0, products: {},
+  by: lsGet('smc_hr_by'), pin: null, pinAt: 0, live: false, chan: null, tick: null,
+  P: { line: null, date: null, rows: {}, orig: {}, actual: {}, seq: 0 }
+};
+let sb = null;
+
+/* ============================================================================
+ *  Start / Auth
+ * ========================================================================== */
+function configured() {
+  return /^https:\/\/.+\.supabase\.co\/?$/.test(CONFIG.SUPABASE_URL) && !/YOUR-/.test(CONFIG.SUPABASE_URL + CONFIG.SUPABASE_ANON_KEY);
+}
+function renderSetup() {
+  root.innerHTML = `<div class="center"><div class="lcard"><div class="logo"><img src="${esc(CONFIG.LOGO_URL)}" alt=""><div><h1>ยังไม่ได้ตั้งค่า</h1><p>SMC Hourly Production</p></div></div>
+    <p>เปิดไฟล์ <code>index.html</code> แล้วใส่ค่าใน <code>CONFIG</code></p>
+    <p>• <code>SUPABASE_URL</code> = Project URL<br>• <code>SUPABASE_ANON_KEY</code> = anon / publishable key</p>
+    <p>หาได้ที่ Supabase › Project Settings › API</p></div></div>`;
+}
+async function start() {
+  if (!configured() || !window.supabase) return renderSetup();
+  sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') { teardown(); renderLogin(); } });
+  window.addEventListener('online', renderConn);
+  window.addEventListener('offline', renderConn);
+  window.addEventListener('beforeunload', e => { if (S.dirty || planDirtyCount()) { e.preventDefault(); e.returnValue = ''; } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.acc) refreshView(); });
+  const { data } = await sb.auth.getSession();
+  if (data && data.session) boot(data.session); else renderLogin();
+}
+
+async function renderLogin(msg) {
+  root.innerHTML = `<div class="center"><div class="lcard">
+    <div class="logo"><img src="${esc(CONFIG.LOGO_URL)}" alt="SMC"><div><h1>บันทึกยอดรายชั่วโมง</h1><p>SMC Hourly Production</p></div></div>
+    <label class="fl">บัญชี (ไลน์ผลิต)</label>
+    <select class="in" id="lgAcc"><option value="">กำลังโหลด…</option></select>
+    <label class="fl">รหัสผ่าน</label>
+    <input class="in" id="lgPw" type="password" autocomplete="current-password">
+    <p class="err" id="lgErr">${esc(msg || '')}</p>
+    <button class="btn primary block" id="lgBtn">เข้าสู่ระบบ</button>
+  </div></div>`;
+  const sel = $('#lgAcc');
+  const { data, error } = await sb.from('app_accounts').select('email,label,role,line_code');
+  if (error) { $('#lgErr').textContent = 'โหลดรายชื่อบัญชีไม่ได้: ' + errMsg(error); sel.innerHTML = '<option value="">–</option>'; }
+  else {
+    const byLabel = (a, b) => a.label.localeCompare(b.label, 'th', { numeric: true });
+    const lineAcc = data.filter(a => a.role === 'line').sort(byLabel), other = data.filter(a => a.role !== 'line').sort(byLabel);
+    const opt = a => `<option value="${esc(a.email)}">${esc(a.label)}</option>`;
+    sel.innerHTML = '<option value="">— เลือกบัญชี —</option>' +
+      (lineAcc.length ? `<optgroup label="ไลน์ผลิต">${lineAcc.map(opt).join('')}</optgroup>` : '') +
+      (other.length ? `<optgroup label="หัวหน้า / ผู้ดูแล">${other.map(opt).join('')}</optgroup>` : '');
+    if (!data.length) $('#lgErr').textContent = 'ยังไม่มีบัญชีในตาราง app_accounts — ดูขั้นตอนตั้งค่าในไฟล์ SQL';
+    const last = lsGet('smc_hr_email');
+    if (last && data.some(a => a.email === last)) sel.value = last;
+  }
+  const go = async () => {
+    const email = sel.value, password = $('#lgPw').value;
+    if (!email) { $('#lgErr').textContent = 'กรุณาเลือกบัญชี'; return; }
+    if (!password) { $('#lgErr').textContent = 'กรุณาใส่รหัสผ่าน'; return; }
+    const b = $('#lgBtn'); b.setAttribute('aria-busy', 'true'); $('#lgErr').textContent = '';
+    const r = await sb.auth.signInWithPassword({ email, password });
+    b.removeAttribute('aria-busy');
+    if (r.error) { $('#lgErr').textContent = errMsg(r.error); return; }
+    lsSet('smc_hr_email', email);
+    boot(r.data.session);
+  };
+  $('#lgBtn').onclick = go;
+  $('#lgPw').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+async function boot(session) {
+  root.innerHTML = '<div class="spin"></div>';
+  try {
+    const [a, l] = await Promise.all([
+      sb.from('app_accounts').select('*').eq('user_id', session.user.id).maybeSingle(),
+      sb.from('lines').select('*').eq('active', true).order('sort').order('code')
+    ]);
+    if (a.error) throw a.error;
+    if (l.error) throw l.error;
+    if (!a.data) {
+      root.innerHTML = `<div class="center"><div class="lcard"><h1>บัญชียังไม่ได้ผูกกับไลน์</h1>
+        <p style="margin:10px 0 18px">อีเมล ${esc(session.user.email)} ยังไม่มีในตาราง <code>app_accounts</code> — รันบล็อก "ผูก User กับไลน์" ในไฟล์ SQL อีกครั้ง</p>
+        <button class="btn block" id="bkOut">ออกจากระบบ</button></div></div>`;
+      $('#bkOut').onclick = () => sb.auth.signOut();
+      return;
+    }
+    S.acc = a.data; S.lines = l.data || [];
+    if (!S.lines.length) throw new Error('ยังไม่มีไลน์ในตาราง lines');
+    const valid = c => S.lines.some(x => x.code === c);
+    S.line = S.acc.role === 'line' ? S.acc.line_code : (valid(lsGet('smc_hr_line')) ? lsGet('smc_hr_line') : S.lines[0].code);
+    S.date = curProd().date; S.follow = true; S.sel = null; S.dirty = false;
+    renderShell();
+    subscribe();
+    clearInterval(S.tick); S.tick = setInterval(onTick, 30000);
+    if (!S.by) await askName(true);
+    if (S.acc.role === 'line') await showEntry(); else await showDash();   // หัวหน้าเข้าหน้า Dashboard ก่อน
+  } catch (e) {
+    root.innerHTML = `<div class="center"><div class="lcard"><h1>โหลดข้อมูลไม่สำเร็จ</h1><p style="margin:10px 0 18px">${esc(errMsg(e))}</p>
+      <button class="btn primary block" id="bkRetry">ลองอีกครั้ง</button><div style="height:10px"></div><button class="btn block" id="bkOut">ออกจากระบบ</button></div></div>`;
+    $('#bkRetry').onclick = () => boot(session);
+    $('#bkOut').onclick = () => sb.auth.signOut();
+  }
+}
+function teardown() {
+  if (S.chan) { sb.removeChannel(S.chan); S.chan = null; }
+  clearInterval(S.tick);
+  S.acc = null; S.pin = null; S.dirty = false; S.recs = {}; S.P.rows = {}; S.P.orig = {};
+  S.view = 'entry'; S.sel = null; D.date = null; D.line = null; D.recs = [];
+}
+
+/* ============================================================================
+ *  Shell (แถบบน + แท็บ)
+ * ========================================================================== */
+function renderShell() {
+  root.innerHTML = `
+    <header class="top">
+      <div class="brand"><img src="${esc(CONFIG.LOGO_URL)}" alt="SMC"><div><b>SMC</b><small>HOURLY PRODUCTION</small></div></div>
+      <nav class="tabs">
+        <button data-v="dash">${ICON.dash}Dashboard</button>
+        <button data-v="entry">${ICON.clock}บันทึกรายชั่วโมง</button>
+        <button data-v="plan">${ICON.lock}แผนรวม</button>
+      </nav>
+      <div class="top-r">
+        <span class="conn" id="conn"><i></i><span></span></span>
+        <button class="chip-btn" id="byChip" title="เปลี่ยนชื่อผู้บันทึก"></button>
+        <span class="acc">${esc(S.acc.label)}</span>
+        <button class="icon-btn" id="btnOut" title="ออกจากระบบ" aria-label="ออกจากระบบ">${ICON.out}</button>
+      </div>
+    </header>
+    <main id="view"></main>`;
+  $$('.tabs button').forEach(b => b.onclick = () => b.dataset.v === 'plan' ? showPlan() : b.dataset.v === 'dash' ? showDash() : showEntry());
+  $('#byChip').onclick = () => askName(false);
+  $('#btnOut').onclick = async () => {
+    if (await ask('ออกจากระบบ?', 'แท็บเล็ตจะต้องใส่รหัสผ่านของไลน์ใหม่อีกครั้ง', 'ออกจากระบบ')) sb.auth.signOut();
+  };
+  renderByChip(); renderConn(); setTab();
+}
+function setTab() { $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view)); }
+function renderByChip() { const c = $('#byChip'); if (c) c.innerHTML = `${ICON.user}<span>ผู้บันทึก: ${esc(S.by || '— ตั้งชื่อ —')}</span>`; }
+function renderConn() {
+  const c = $('#conn'); if (!c) return;
+  const on = navigator.onLine;
+  c.className = 'conn ' + (!on ? 'off' : S.live ? 'live' : '');
+  c.querySelector('span').textContent = !on ? 'ออฟไลน์' : S.live ? 'ออนไลน์ · Realtime' : 'ออนไลน์';
+}
+function subscribe() {
+  if (S.chan) sb.removeChannel(S.chan);
+  S.chan = sb.channel('hourly-records')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hourly_records' }, onRealtime)
+    .subscribe(st => { S.live = st === 'SUBSCRIBED'; renderConn(); });
+}
+/** มีคนแก้ข้อมูล (เช่น หัวหน้าแก้แผน) → อัปเดตหน้าจอทันที */
+function onRealtime(p) {
+  const r = p.new;
+  if (!r || r.id === undefined || r.hour === undefined) return;
+  if (S.view === 'entry' && r.line_code === S.line && r.prod_date === S.date) {
+    S.recs[r.hour] = r;
+    renderGrid(); renderSummary();
+    if (r.hour === S.sel) {
+      if (!S.dirty && !panelFocused()) { initForm(r.hour); renderPanel(); }
+      else { const pl = $('#fPlan'); if (pl) setPlanBox(pl, r.plan_qty); updPct(); }
+    }
+  }
+  if (S.view === 'dash' && r.prod_date === D.date) {
+    const i = D.recs.findIndex(x => x.id === r.id);
+    if (i >= 0) D.recs[i] = r; else D.recs.push(r);
+    D.at = new Date();
+    renderDashBody();
+  }
+  if (S.view === 'plan' && r.line_code === S.P.line && r.prod_date === S.P.date) {
+    S.P.actual[r.hour] = r.actual_qty;
+    const cell = $(`#pBody tr[data-h="${r.hour}"] td.act`);
+    if (cell) cell.textContent = fmt(r.actual_qty);
+  }
+}
+function onTick() {
+  if (!S.acc || document.hidden) return;
+  if (S.view === 'dash') {
+    const c = curProd();
+    if (D.follow && c.date !== D.date) { D.date = c.date; renderDashShell(); }
+    loadDash();   // โหลดใหม่ทุก 30 วิ เผื่อ Realtime หลุด (ข้อมูล 1 วันมีไม่กี่ร้อยแถว)
+    return;
+  }
+  if (S.view === 'entry') {
+    const c = curProd();
+    if (S.follow && c.date !== S.date && !S.dirty) { S.date = c.date; S.sel = null; renderEntry(); loadDay(false); return; }
+    renderGrid(); renderSummary();
+    if (!S.dirty && !panelFocused()) renderPanel();
+  }
+  if (S.view === 'plan' && S.pin && !pinOk() && !planDirtyCount()) { S.pin = null; toast('เมนูแผนรวมล็อกอัตโนมัติ'); showEntry(); }
+}
+function refreshView() { if (S.view === 'dash') loadDash(); else if (S.view === 'entry') loadDay(true); else if (!planDirtyCount()) loadPlan(); }
+function panelFocused() { const p = $('#panel'), a = document.activeElement; return !!(p && a && p.contains(a) && a !== document.body); }
+async function loadProducts(line) {
+  if (S.products[line]) return S.products[line];
+  const { data } = await sb.from('hourly_records').select('product').eq('line_code', line).not('product', 'is', null)
+    .gte('prod_date', addDays(curProd().date, -90)).limit(2000);
+  S.products[line] = [...new Set((data || []).map(x => x.product).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+  return S.products[line];
+}
+function fillDatalist(id, list) { const d = $('#' + id); if (d) d.innerHTML = list.map(p => `<option value="${esc(p)}"></option>`).join(''); }
+
+/* ============================================================================
+ *  เมนู 1: บันทึกรายชั่วโมง
+ * ========================================================================== */
+async function showEntry() {
+  if (S.view === 'plan' && planDirtyCount() && !(await ask('ยังไม่ได้บันทึกแผน', 'มีแผนที่แก้ไว้แต่ยังไม่ได้กด "บันทึกแผน" — ต้องการออกโดยไม่บันทึก?', 'ออกโดยไม่บันทึก'))) return;
+  S.P.rows = {}; S.P.orig = {};
+  S.view = 'entry'; setTab();
+  renderEntry();
+  await loadDay(S.sel !== null);
+}
+function minEntryDate() { return S.acc.role === 'line' ? addDays(curProd().date, -CONFIG.BACK_DAYS) : ''; }
+function canEditDate(d) { const mn = minEntryDate(); return !mn || d >= mn; }
+
+function renderEntry() {
+  const cur = curProd().date, mn = minEntryDate();
+  $('#view').innerHTML = `
+    <div class="bar">
+      ${S.acc.role === 'line'
+        ? `<span class="linebadge">ไลน์ ${esc(S.line)}</span>`
+        : `<select class="in sel" id="eLine">${S.lines.map(l => `<option value="${esc(l.code)}" ${l.code === S.line ? 'selected' : ''}>ไลน์ ${esc(l.name)}</option>`).join('')}</select>`}
+      <div class="dnav">
+        <button id="dPrev" aria-label="วันก่อนหน้า">‹</button>
+        <input type="date" class="in date" id="eDate" value="${S.date}" max="${cur}" ${mn ? `min="${mn}"` : ''}>
+        <button id="dNext" aria-label="วันถัดไป">›</button>
+      </div>
+      ${S.date !== cur ? '<button class="btn" id="dToday">กลับวันผลิตปัจจุบัน</button>' : ''}
+      <span class="dlabel">วันผลิต ${dateLong(S.date)}</span>
+    </div>
+    <section class="kpis" id="sum"></section>
+    <div class="ent">
+      <section class="card">
+        <div class="ch"><h3>ชั่วโมงของวันผลิต (08.00 → 07.59)</h3>
+          <div class="legend"><span><i style="background:var(--green)"></i>≥ 95%</span><span><i style="background:var(--amber)"></i>≥ 85%</span><span><i style="background:var(--red)"></i>ต่ำกว่า</span><span><i style="border:1.5px dashed var(--red);background:#FFF5F6"></i>ยังไม่กรอก</span><span><i style="border:2px solid var(--blue)"></i>ชั่วโมงนี้</span></div>
+        </div>
+        <div class="slots" id="slots"><div class="spin"></div></div>
+      </section>
+      <section class="card" id="panel"><div class="spin"></div></section>
+    </div>
+    <datalist id="dlProd"></datalist>`;
+  const setDate = async d => {
+    if (!d || d === S.date) return;
+    if (d > cur) d = cur;
+    if (mn && d < mn) { toast('บัญชีไลน์ดูย้อนหลังได้ไม่เกิน ' + CONFIG.BACK_DAYS + ' วันผลิต', 'err'); d = mn; }
+    if (S.dirty && !(await ask('ยังไม่ได้บันทึก', 'ข้อมูลที่กรอกค้างไว้จะหายไป — เปลี่ยนวันเลย?', 'เปลี่ยนวัน'))) { $('#eDate').value = S.date; return; }
+    S.date = d; S.follow = d === cur; S.sel = null; S.dirty = false;
+    renderEntry(); loadDay(false);
+  };
+  $('#eDate').onchange = e => setDate(e.target.value);
+  $('#dPrev').onclick = () => setDate(addDays(S.date, -1));
+  $('#dNext').onclick = () => setDate(addDays(S.date, 1));
+  const t = $('#dToday'); if (t) t.onclick = () => setDate(cur);
+  const ls = $('#eLine');
+  if (ls) ls.onchange = async () => {
+    if (S.dirty && !(await ask('ยังไม่ได้บันทึก', 'ข้อมูลที่กรอกค้างไว้จะหายไป — เปลี่ยนไลน์เลย?', 'เปลี่ยนไลน์'))) { ls.value = S.line; return; }
+    S.line = ls.value; lsSet('smc_hr_line', S.line); S.sel = null; S.dirty = false;
+    loadDay(false);
+  };
+}
+
+async function loadDay(keep) {
+  const my = ++S.seq;
+  const [res, prods] = await Promise.all([
+    sb.from('hourly_records').select('*').eq('line_code', S.line).eq('prod_date', S.date),
+    loadProducts(S.line)
+  ]);
+  if (my !== S.seq || S.view !== 'entry') return;
+  if (res.error) { toast('โหลดข้อมูลไม่สำเร็จ: ' + errMsg(res.error), 'err'); return; }
+  S.recs = {};
+  (res.data || []).forEach(r => { S.recs[r.hour] = r; });
+  fillDatalist('dlProd', prods);
+  renderGrid(); renderSummary();
+  if (!keep || S.sel === null) { S.sel = defaultSlot(); S.dirty = false; }
+  if (!S.dirty && !panelFocused()) { initForm(S.sel); renderPanel(); }
+}
+const isMissing = h => { const r = S.recs[h] || {}; return num(r.actual_qty) === null && num(r.plan_qty) > 0 && slotState(S.date, h) === 'past'; };
+/** ช่องเริ่มต้น: ชั่วโมงที่ขาดเก่าสุด → ชั่วโมงที่เพิ่งจบ (ถ้ายังไม่กรอก) → ชั่วโมงปัจจุบัน */
+function defaultSlot() {
+  const miss = HOURS.find(isMissing);
+  if (miss !== undefined) return miss;
+  const c = curProd();
+  if (S.date === c.date) {
+    const prev = (c.hour + 23) % 24;
+    if (hk(prev) < hk(c.hour) && num((S.recs[prev] || {}).actual_qty) === null) return prev;
+    return c.hour;
+  }
+  const planned = HOURS.find(h => num((S.recs[h] || {}).plan_qty) > 0 && num((S.recs[h] || {}).actual_qty) === null);
+  return planned !== undefined ? planned : HOURS[0];
+}
+
+function daySum() {
+  let plan = 0, planM = 0, actIn = 0, act = 0, miss = 0, done = 0, nPlan = 0;
+  HOURS.forEach(h => {
+    const r = S.recs[h] || {}, p = num(r.plan_qty), a = num(r.actual_qty);
+    if (p > 0) { plan += p; nPlan++; }
+    if (a !== null) { act += a; done++; if (p > 0) { planM += p; actIn += a; } }
+    if (isMissing(h)) miss++;
+  });
+  return { plan, planM, actIn, act, miss, done, nPlan, ach: planM > 0 ? actIn / planM : null, prog: plan > 0 ? act / plan : null };
+}
+function renderSummary() {
+  const el = $('#sum'); if (!el) return;
+  const s = daySum(), c = achCls(s.ach);
+  el.innerHTML = `
+    <div class="kpi"><small>%Achievement (ชั่วโมงที่บันทึกแล้ว)</small><b class="num c-${c}">${pct(s.ach)}</b><span class="num">Actual ${fmt(s.actIn)} / Plan ${fmt(s.planM)}</span></div>
+    <div class="kpi"><small>ความคืบหน้าแผนทั้งวัน</small><b class="num">${pct(s.prog)}</b><span class="num">${fmt(s.act)} / ${fmt(s.plan)}</span>
+      <div class="pbar"><i style="width:${s.prog === null ? 0 : Math.min(100, s.prog * 100).toFixed(1)}%"></i></div></div>
+    <div class="kpi"><small>บันทึก Actual แล้ว</small><b class="num">${s.done} <span style="font-size:15px">ชม.</span></b><span>มีแผน ${s.nPlan} ชม.</span></div>
+    <div class="kpi"><small>ชั่วโมงที่ยังไม่กรอก</small><b class="num ${s.miss ? 'c-bad' : 'c-good'}">${s.miss}</b><span>${s.miss ? 'ผ่านไปแล้วแต่ยังไม่มี Actual' : 'ครบทุกชั่วโมงที่ผ่านมา'}</span></div>`;
+}
+function renderGrid() {
+  const el = $('#slots'); if (!el) return;
+  el.innerHTML = HOURS.map(h => {
+    const r = S.recs[h] || {}, p = num(r.plan_qty), a = num(r.actual_qty), st = slotState(S.date, h);
+    let cls = 'slot ' + st;
+    if (a !== null) cls += ' done ' + (p > 0 ? achCls(a / p) : 'ex');
+    else if (isMissing(h)) cls += ' miss';
+    if (h === S.sel) cls += ' sel';
+    const tail = a !== null ? (p > 0 ? pct(a / p) : 'นอกแผน')
+      : st === 'current' ? '<span class="now">ตอนนี้</span>' : isMissing(h) ? 'ยังไม่กรอก' : '';
+    return `<button class="${cls}" data-h="${h}">
+      ${r.bd_machine ? '<i class="bdd" title="มีเครื่องเสีย"></i>' : ''}
+      <span class="t num">${pad(h)}.00</span>
+      <span class="pa num"><i>P</i>${p !== null ? fmt(p) : '–'}</span>
+      <span class="pa num"><i>A</i>${a !== null ? fmt(a) : '–'}</span>
+      <span class="pc num">${tail}</span></button>`;
+  }).join('');
+  $$('.slot', el).forEach(b => b.onclick = () => pickSlot(Number(b.dataset.h)));
+}
+async function pickSlot(h) {
+  if (h === S.sel) return;
+  if (S.dirty && !(await ask('ยังไม่ได้บันทึก', `ข้อมูลของ ${slotLabel(S.sel)} ที่กรอกค้างไว้จะหายไป — เปลี่ยนชั่วโมงเลย?`, 'เปลี่ยนชั่วโมง'))) return;
+  S.sel = h; initForm(h); renderGrid(); renderPanel();
+  if (window.innerWidth <= 1000) $('#panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/** Product ล่าสุดก่อนชั่วโมงนี้ (ลากต่อจากชั่วโมงก่อน) */
+function prevProduct(h) {
+  for (let k = hk(h); k >= 0; k--) { const r = S.recs[HOURS[k]]; if (r && r.product) return r.product; }
+  return '';
+}
+function initForm(h) {
+  const r = S.recs[h] || {};
+  S.form = {
+    hour: h, product: r.product || prevProduct(h), actual: r.actual_qty ?? '',
+    reason: r.remark_code || '', remark: r.remark || '', bdOn: !!r.bd_machine,
+    bd: { machine: r.bd_machine || '', start: t5(r.bd_start), repair: t5(r.bd_repair), end: t5(r.bd_end), status: r.bd_status || 'open' }
+  };
+  S.dirty = false;
+}
+function setPlanBox(el, plan) {
+  const p = num(plan);
+  el.className = 'ro num' + (p === null ? ' none' : '');
+  el.textContent = p === null ? 'ไม่มีแผน' : fmt(p);
+}
+function renderPanel() {
+  const box = $('#panel'); if (!box || S.sel === null || !S.form) return;
+  const h = S.sel, r = S.recs[h] || {}, st = slotState(S.date, h), f = S.form;
+  const cal = hk(h) >= 24 - CONFIG.DAY_START_HOUR ? `เช้าวันที่ ${dateShort(addDays(S.date, 1))} (วันผลิต ${dateShort(S.date)})` : `วันผลิต ${dateShort(S.date)}`;
+  const head = `<div class="ph"><div><h2 class="num">${slotLabel(h)}</h2><small>ไลน์ ${esc(S.line)} · ${cal}</small></div>
+    <span class="tag ${st}">${{ past: 'ผ่านแล้ว', current: 'ชั่วโมงนี้', future: 'ยังไม่ถึง' }[st]}</span></div>`;
+  const planInfo = `แผน: <b>${num(r.plan_qty) !== null ? fmt(r.plan_qty) : 'ไม่มีแผน'}</b> · Product: <b>${esc(r.product || '–')}</b>`;
+  if (st === 'future') { box.innerHTML = head + `<div class="info">ยังไม่ถึงชั่วโมงนี้ — บันทึก Actual ได้เมื่อถึงเวลา<br>${planInfo}</div>`; return; }
+  if (!canEditDate(S.date)) { box.innerHTML = head + `<div class="info">แก้ไขย้อนหลังเกิน ${CONFIG.BACK_DAYS} วันผลิตไม่ได้ — ติดต่อหัวหน้า<br>${planInfo}<br>Actual: <b>${fmt(r.actual_qty)}</b></div>`; return; }
+
+  box.innerHTML = head + `
+    ${num(r.actual_qty) !== null ? `<div class="exist">บันทึกแล้ว <b class="num">${fmt(r.actual_qty)}</b> โดย ${esc(r.actual_by || '–')} · ${esc(timeOf(r.actual_at))}</div>` : ''}
+    <label class="fl" for="fProd">Product</label>
+    <input class="in" id="fProd" list="dlProd" autocomplete="off" placeholder="ชื่อ Product" value="${esc(f.product)}">
+    <div class="two">
+      <div><label class="fl">Plan / hr</label><div id="fPlan"></div></div>
+      <div><label class="fl" for="fAct">Actual / hr <span class="req">*</span></label>
+        <input class="in big num" id="fAct" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(f.actual)}"></div>
+    </div>
+    <div class="achbox"><span>%Ach ชั่วโมงนี้</span><b class="num" id="fPct">–</b></div>
+    <label class="fl" id="fReasonLb">เหตุผล</label>
+    <div class="chips" id="fReason">${CONFIG.REASONS.map(x => `<button type="button" class="chipb ${f.reason === x ? 'on' : ''}" data-r="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <textarea class="in" id="fRemark" rows="2" maxlength="300" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)">${esc(f.remark)}</textarea>
+    <label class="switch"><input type="checkbox" id="fBd" ${f.bdOn ? 'checked' : ''}><span></span>มีเครื่องเสียในชั่วโมงนี้</label>
+    <div class="bd" id="bdBox" ${f.bdOn ? '' : 'hidden'}>
+      <label class="fl" for="bdM">เครื่อง / อาการ <span class="req">*</span></label>
+      <input class="in" id="bdM" maxlength="120" placeholder="เช่น เครื่องซีล — ซีลไม่ติด" value="${esc(f.bd.machine)}">
+      <div class="three">
+        <div><label class="fl" for="bdS">เริ่มเสีย <span class="req">*</span></label><input class="in" id="bdS" type="time" value="${esc(f.bd.start)}"></div>
+        <div><label class="fl" for="bdR">เริ่มซ่อม</label><input class="in" id="bdR" type="time" value="${esc(f.bd.repair)}"></div>
+        <div><label class="fl" for="bdE">ซ่อมเสร็จ</label><input class="in" id="bdE" type="time" value="${esc(f.bd.end)}"></div>
+      </div>
+      <div class="seg" id="bdSt"><button type="button" data-s="open">ยังซ่อมไม่เสร็จ</button><button type="button" data-s="done">ซ่อมเสร็จแล้ว</button></div>
+    </div>
+    <p class="err" id="fErr"></p>
+    <button class="btn primary block" id="fSave">${num(r.actual_qty) !== null ? 'บันทึกการแก้ไข' : 'บันทึก ' + pad(h) + '.00'}</button>`;
+
+  setPlanBox($('#fPlan'), r.plan_qty);
+  const dirty = () => { S.dirty = true; $('#fErr').textContent = ''; };
+  $('#fProd').oninput = e => { f.product = e.target.value; dirty(); };
+  $('#fAct').oninput = e => { f.actual = e.target.value; dirty(); updPct(); };
+  $('#fAct').onkeydown = e => { if (e.key === 'Enter') saveActual(); };
+  $('#fRemark').oninput = e => { f.remark = e.target.value; dirty(); };
+  $$('#fReason .chipb').forEach(b => b.onclick = () => {
+    f.reason = f.reason === b.dataset.r ? '' : b.dataset.r; dirty();
+    $$('#fReason .chipb').forEach(x => x.classList.toggle('on', x.dataset.r === f.reason));
+    if (f.reason === 'เครื่องเสีย' && !f.bdOn) { $('#fBd').checked = true; $('#fBd').onchange(); }
+    updPct();
+  });
+  $('#fBd').onchange = () => {
+    f.bdOn = $('#fBd').checked; dirty();
+    $('#bdBox').hidden = !f.bdOn;
+    if (f.bdOn) setTimeout(() => $('#bdM').focus(), 30);
+  };
+  $('#bdM').oninput = e => { f.bd.machine = e.target.value; dirty(); };
+  $('#bdS').oninput = e => { f.bd.start = e.target.value; dirty(); };
+  $('#bdR').oninput = e => { f.bd.repair = e.target.value; dirty(); };
+  $('#bdE').oninput = e => { f.bd.end = e.target.value; dirty(); if (e.target.value && f.bd.status === 'open') { f.bd.status = 'done'; paintSt(); } };
+  const paintSt = () => $$('#bdSt button').forEach(b => b.classList.toggle('on', b.dataset.s === f.bd.status));
+  $$('#bdSt button').forEach(b => b.onclick = () => { f.bd.status = b.dataset.s; dirty(); paintSt(); });
+  paintSt();
+  $('#fSave').onclick = saveActual;
+  updPct();
+}
+function needReason() {
+  const p = num((S.recs[S.sel] || {}).plan_qty), a = num(S.form.actual);
+  return p > 0 && a !== null && a / p < CONFIG.ACH_WARN;
+}
+function updPct() {
+  const el = $('#fPct'); if (!el) return;
+  const p = num((S.recs[S.sel] || {}).plan_qty), a = num(S.form.actual);
+  if (a === null) { el.textContent = '–'; el.className = 'num'; }
+  else if (!(p > 0)) { el.textContent = 'นอกแผน'; el.className = 'num c-na'; }
+  else { el.textContent = pct(a / p); el.className = 'num c-' + achCls(a / p); }
+  const lb = $('#fReasonLb');
+  if (lb) lb.innerHTML = needReason() ? 'เหตุผล <span class="req">* จำเป็น (ต่ำกว่า ' + Math.round(CONFIG.ACH_WARN * 100) + '%)</span>' : 'เหตุผล';
+}
+async function saveActual() {
+  const f = S.form, h = S.sel, r = S.recs[h] || {}, err = $('#fErr');
+  const a = num(f.actual);
+  const fail = m => { err.textContent = m; };
+  if (String(f.actual).trim() === '' || a === null) return fail('กรุณากรอก Actual เป็นตัวเลข');
+  if (a < 0) return fail('Actual ต้องไม่ติดลบ');
+  if (!S.by) { await askName(true); if (!S.by) return; }
+  if (needReason() && !f.reason) return fail('%Ach ต่ำกว่า ' + Math.round(CONFIG.ACH_WARN * 100) + '% — กรุณาเลือกเหตุผล');
+  if (f.reason === 'อื่นๆ' && !f.remark.trim()) return fail('เลือก "อื่นๆ" — กรุณาพิมพ์รายละเอียด');
+  if (f.bdOn && !f.bd.machine.trim()) return fail('มีเครื่องเสีย — กรุณาระบุเครื่อง / อาการ');
+  if (f.bdOn && !f.bd.start) return fail('มีเครื่องเสีย — กรุณาระบุเวลาเริ่มเสีย');
+  const p = num(r.plan_qty);
+  if (p > 0 && a > p * 1.5 && !(await ask('ยอดสูงกว่าแผนมาก', `Actual <b>${fmt(a)}</b> สูงกว่าแผน <b>${fmt(p)}</b> เกิน 50% — ตรวจตัวเลขอีกครั้ง ถูกต้องใช่ไหม?`, 'ถูกต้อง บันทึก', 'กลับไปแก้'))) return;
+  const old = num(r.actual_qty);
+  if (old !== null && old !== a && !(await ask('แก้ไขยอดที่บันทึกไว้', `${slotLabel(h)}<br>เดิม <b>${fmt(old)}</b> (โดย ${esc(r.actual_by || '–')}) → ใหม่ <b>${fmt(a)}</b>`, 'ยืนยันแก้ไข'))) return;
+
+  const btn = $('#fSave'); btn.setAttribute('aria-busy', 'true'); btn.textContent = 'กำลังบันทึก…';
+  const { data, error } = await sb.rpc('save_actual', {
+    p_line: S.line, p_date: S.date, p_hour: h, p_actual: a,
+    p_product: f.product.trim() || null,
+    p_remark_code: f.reason || null,
+    p_remark: f.remark.trim() || null,
+    p_bd: f.bdOn ? { machine: f.bd.machine.trim(), start: f.bd.start, repair: f.bd.repair, end: f.bd.end, status: f.bd.status } : null,
+    p_by: S.by
+  });
+  if (error) {
+    btn.removeAttribute('aria-busy'); btn.textContent = old !== null ? 'บันทึกการแก้ไข' : 'บันทึก ' + pad(h) + '.00';
+    return fail(errMsg(error));
+  }
+  if (data && data.product && S.products[S.line] && !S.products[S.line].includes(data.product)) {
+    S.products[S.line].push(data.product); fillDatalist('dlProd', S.products[S.line]);
+  }
+  S.recs[h] = data || Object.assign({}, r, { actual_qty: a });
+  S.dirty = false;
+  toast(`บันทึก ${slotLabel(h)} = ${fmt(a)} แล้ว`, 'ok');
+  const next = HOURS.find(isMissing);
+  S.sel = next !== undefined ? next : h;
+  initForm(S.sel);
+  renderGrid(); renderSummary(); renderPanel();
+}
+
+/* ============================================================================
+ *  เมนู 2: แผนรวม (ต้องใส่รหัส)
+ * ========================================================================== */
+function pinOk() { return !!S.pin && Date.now() - S.pinAt < CONFIG.PIN_IDLE_MIN * 60000; }
+async function showPlan() {
+  if (S.view === 'plan') return;
+  if (S.dirty && !(await ask('ยังไม่ได้บันทึก', 'ข้อมูลรายชั่วโมงที่กรอกค้างไว้จะหายไป — ไปเมนูแผนรวมเลย?', 'ไปเมนูแผนรวม'))) return;
+  if (!pinOk() && !(await askPin())) return;
+  S.dirty = false;
+  S.view = 'plan'; setTab();
+  if (!S.P.line) S.P.line = S.line;
+  if (!S.P.date) S.P.date = curProd().date;
+  renderPlan();
+  await loadPlan();
+}
+function planDirtyCount() {
+  if (S.view !== 'plan') return 0;
+  return HOURS.filter(h => { const a = S.P.rows[h], b = S.P.orig[h]; return a && b && (a.product.trim() !== b.product || String(a.plan).trim() !== b.plan); }).length;
+}
+function renderPlan() {
+  const opts = HOURS.map(h => `<option value="${h}">${pad(h)}.00</option>`).join('');
+  $('#view').innerHTML = `
+    <div class="bar">
+      <select class="in sel" id="pLine">${S.lines.map(l => `<option value="${esc(l.code)}" ${l.code === S.P.line ? 'selected' : ''}>ไลน์ ${esc(l.name)}</option>`).join('')}</select>
+      <div class="dnav">
+        <button id="pPrev" aria-label="วันก่อนหน้า">‹</button>
+        <input type="date" class="in date" id="pDate" value="${S.P.date}">
+        <button id="pNext" aria-label="วันถัดไป">›</button>
+      </div>
+      <span class="dlabel">วันผลิต ${dateLong(S.P.date)}</span>
+      <span class="sp"></span>
+      <button class="btn ghost" id="pLock">${ICON.lock.replace('<svg', '<svg class="i"')}ล็อกเมนูแผน</button>
+    </div>
+    <section class="card" style="margin-bottom:14px">
+      <div class="ch"><h3>เติมแผนแบบช่วงเวลา</h3><span class="dlabel">ใส่เฉพาะช่องที่ต้องการเติม · ช่องว่าง = ไม่เปลี่ยน</span></div>
+      <div class="fill">
+        <div><label class="fl" for="qProd">Product</label><input class="in" id="qProd" list="dlPlan" autocomplete="off" placeholder="ชื่อ Product"></div>
+        <div><label class="fl" for="qPlan">Plan / hr</label><input class="in r num" id="qPlan" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+        <div><label class="fl" for="qFrom">ตั้งแต่</label><select class="in" id="qFrom">${opts}</select></div>
+        <div><label class="fl" for="qTo">ถึง (รวม)</label><select class="in" id="qTo">${opts}</select></div>
+        <button class="btn navy" id="qApply">เติมลงตาราง</button>
+      </div>
+      <div class="tools">
+        <button class="btn ghost" id="pCopy">คัดลอกแผนจากวันผลิตก่อนหน้า</button>
+        <button class="btn ghost" id="pClear">ล้างแผนทั้งวัน</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="ch"><h3>แผนรายชั่วโมง · ไลน์ <span id="pLineName"></span></h3><b class="num" id="pTotal"></b></div>
+      <div class="tblw"><table class="pt">
+        <thead><tr><th>เวลา</th><th>Product</th><th class="r">Plan / hr</th><th class="r">Actual</th></tr></thead>
+        <tbody id="pBody"><tr><td colspan="4"><div class="spin"></div></td></tr></tbody>
+      </table></div>
+    </section>
+    <div class="savebar"><span id="pDirty"></span><button class="btn primary" id="pSave" style="min-width:180px">บันทึกแผน</button></div>
+    <datalist id="dlPlan"></datalist>`;
+  $('#qTo').value = String(HOURS[23]);
+  $('#pLineName').textContent = S.P.line;
+
+  const change = async (line, date) => {
+    if (planDirtyCount() && !(await ask('ยังไม่ได้บันทึกแผน', 'แผนที่แก้ไว้จะหายไป — เปลี่ยนเลย?', 'เปลี่ยน'))) { $('#pLine').value = S.P.line; $('#pDate').value = S.P.date; return; }
+    S.P.line = line; S.P.date = date;
+    renderPlan(); loadPlan();
+  };
+  $('#pLine').onchange = e => change(e.target.value, S.P.date);
+  $('#pDate').onchange = e => { if (e.target.value) change(S.P.line, e.target.value); };
+  $('#pPrev').onclick = () => change(S.P.line, addDays(S.P.date, -1));
+  $('#pNext').onclick = () => change(S.P.line, addDays(S.P.date, 1));
+  $('#pLock').onclick = async () => {
+    if (planDirtyCount() && !(await ask('ยังไม่ได้บันทึกแผน', 'แผนที่แก้ไว้จะหายไป — ล็อกเลย?', 'ล็อก'))) return;
+    S.P.rows = {}; S.P.orig = {}; S.pin = null; showEntry();
+  };
+  $('#qApply').onclick = () => {
+    if (!S.P.rows[HOURS[0]]) return toast('กำลังโหลดแผน — ลองอีกครั้ง');
+    const prod = $('#qProd').value.trim(), plan = $('#qPlan').value.trim();
+    if (!prod && plan === '') return toast('ใส่ Product หรือ Plan / hr อย่างน้อย 1 ช่อง', 'err');
+    if (plan !== '' && !(num(plan) >= 0)) return toast('Plan / hr ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป', 'err');
+    const a = hk(Number($('#qFrom').value)), b = hk(Number($('#qTo').value));
+    if (b < a) return toast('ช่วงเวลาไม่ถูกต้อง: "ถึง" ต้องอยู่หลัง "ตั้งแต่"', 'err');
+    for (let k = a; k <= b; k++) {
+      const row = S.P.rows[HOURS[k]];
+      if (prod) row.product = prod;
+      if (plan !== '') row.plan = plan;
+    }
+    renderPlanBody();
+    toast(`เติม ${b - a + 1} ชั่วโมงแล้ว — อย่าลืมกด "บันทึกแผน"`);
+  };
+  $('#pCopy').onclick = async () => {
+    const prev = addDays(S.P.date, -1);
+    const { data, error } = await sb.from('hourly_records').select('hour,product,plan_qty').eq('line_code', S.P.line).eq('prod_date', prev);
+    if (error) return toast(errMsg(error), 'err');
+    if (!data.length || !data.some(r => num(r.plan_qty) !== null || r.product)) return toast('วันผลิต ' + dateShort(prev) + ' ไม่มีแผน', 'err');
+    if (!(await ask('คัดลอกแผน', `แทนที่แผนทั้งวันด้วยแผนของวันผลิต ${dateShort(prev)}?`, 'คัดลอก'))) return;
+    HOURS.forEach(h => { S.P.rows[h] = { product: '', plan: '' }; });
+    data.forEach(r => { S.P.rows[r.hour] = { product: r.product || '', plan: num(r.plan_qty) === null ? '' : String(num(r.plan_qty)) }; });
+    renderPlanBody();
+  };
+  $('#pClear').onclick = async () => {
+    if (!(await ask('ล้างแผนทั้งวัน?', 'Product และ Plan / hr ทุกชั่วโมงจะถูกล้าง (Actual ที่บันทึกแล้วไม่หาย) — มีผลเมื่อกด "บันทึกแผน"', 'ล้าง'))) return;
+    HOURS.forEach(h => { S.P.rows[h] = { product: '', plan: '' }; });
+    renderPlanBody();
+  };
+  $('#pSave').onclick = savePlan;
+}
+async function loadPlan() {
+  const my = ++S.P.seq;
+  const [res, prods] = await Promise.all([
+    sb.from('hourly_records').select('hour,product,plan_qty,actual_qty').eq('line_code', S.P.line).eq('prod_date', S.P.date),
+    loadProducts(S.P.line)
+  ]);
+  if (my !== S.P.seq || S.view !== 'plan') return;
+  if (res.error) { toast('โหลดแผนไม่สำเร็จ: ' + errMsg(res.error), 'err'); return; }
+  S.P.rows = {}; S.P.orig = {}; S.P.actual = {};
+  HOURS.forEach(h => { S.P.orig[h] = { product: '', plan: '' }; });
+  (res.data || []).forEach(r => {
+    S.P.orig[r.hour] = { product: r.product || '', plan: num(r.plan_qty) === null ? '' : String(num(r.plan_qty)) };
+    S.P.actual[r.hour] = r.actual_qty;
+  });
+  HOURS.forEach(h => { S.P.rows[h] = Object.assign({}, S.P.orig[h]); });
+  fillDatalist('dlPlan', prods);
+  renderPlanBody();
+}
+function renderPlanBody() {
+  const body = $('#pBody'); if (!body) return;
+  body.innerHTML = HOURS.map(h => {
+    const r = S.P.rows[h], o = S.P.orig[h];
+    const chg = r.product.trim() !== o.product || String(r.plan).trim() !== o.plan;
+    return `<tr data-h="${h}" class="${chg ? 'chg' : ''} ${hk(h) >= 24 - CONFIG.DAY_START_HOUR ? 'nd' : ''}">
+      <td class="t num">${slotLabel(h)}${hk(h) === 24 - CONFIG.DAY_START_HOUR ? '<small>หลังเที่ยงคืน</small>' : ''}</td>
+      <td><input class="in sm" data-f="product" list="dlPlan" autocomplete="off" value="${esc(r.product)}" placeholder="–"></td>
+      <td><input class="in sm r num" data-f="plan" type="number" inputmode="decimal" min="0" step="any" value="${esc(r.plan)}" placeholder="–"></td>
+      <td class="r num act">${fmt(S.P.actual[h])}</td></tr>`;
+  }).join('');
+  $$('input', body).forEach(inp => {
+    inp.oninput = () => {
+      const h = Number(inp.closest('tr').dataset.h);
+      S.P.rows[h][inp.dataset.f] = inp.value;
+      S.pinAt = Date.now();                     // กำลังใช้งาน → ยืดเวลาล็อกอัตโนมัติ
+      const r = S.P.rows[h], o = S.P.orig[h];
+      inp.closest('tr').classList.toggle('chg', r.product.trim() !== o.product || String(r.plan).trim() !== o.plan);
+      planFooter();
+    };
+    inp.onkeydown = e => {   // Enter = ลงแถวถัดไป (คีย์ต่อเนื่องได้เร็ว)
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const tr = inp.closest('tr').nextElementSibling;
+      const nx = tr && tr.querySelector(`[data-f="${inp.dataset.f}"]`);
+      if (nx) nx.focus(); else $('#pSave').focus();
+    };
+  });
+  planFooter();
+}
+function planFooter() {
+  const tot = HOURS.reduce((s, h) => s + (num(S.P.rows[h].plan) || 0), 0);
+  const n = HOURS.filter(h => num(S.P.rows[h].plan) > 0).length;
+  $('#pTotal').textContent = `รวมแผนทั้งวัน ${fmt(tot)} · ${n} ชม.`;
+  const d = planDirtyCount(), el = $('#pDirty');
+  el.className = d ? 'dirty' : '';
+  el.textContent = d ? `แก้ไขแล้ว ${d} ชั่วโมง — ยังไม่ได้บันทึก` : 'ไม่มีการเปลี่ยนแปลง';
+}
+async function savePlan() {
+  if (!planDirtyCount()) return toast('ไม่มีการเปลี่ยนแปลง');
+  const bad = HOURS.find(h => { const v = String(S.P.rows[h].plan).trim(); return v !== '' && !(num(v) >= 0); });
+  if (bad !== undefined) return toast(`Plan / hr ของ ${slotLabel(bad)} ไม่ถูกต้อง`, 'err');
+  const noProd = HOURS.filter(h => num(S.P.rows[h].plan) > 0 && !S.P.rows[h].product.trim());
+  if (noProd.length && !(await ask('มีแผนที่ไม่ระบุ Product', `${noProd.length} ชั่วโมงมี Plan แต่ไม่มี Product — บันทึกต่อ?`, 'บันทึกต่อ', 'กลับไปแก้'))) return;
+  if (!S.by) { await askName(true); if (!S.by) return; }
+  if (!pinOk() && !(await askPin())) return;
+  const rows = HOURS.map(h => ({ hour: h, product: S.P.rows[h].product.trim() || null, plan: String(S.P.rows[h].plan).trim() === '' ? null : num(S.P.rows[h].plan) }));
+  const btn = $('#pSave'); btn.setAttribute('aria-busy', 'true'); btn.textContent = 'กำลังบันทึก…';
+  const { data, error } = await sb.rpc('save_plan', { p_pin: S.pin, p_line: S.P.line, p_date: S.P.date, p_rows: rows, p_by: S.by });
+  btn.removeAttribute('aria-busy'); btn.textContent = 'บันทึกแผน';
+  if (error) {
+    const m = errMsg(error);
+    if (/รหัส/.test(m)) S.pin = null;
+    return toast('บันทึกแผนไม่สำเร็จ: ' + m, 'err');
+  }
+  S.pinAt = Date.now();
+  rows.forEach(r => { if (r.product && S.products[S.P.line] && !S.products[S.P.line].includes(r.product)) S.products[S.P.line].push(r.product); });
+  toast(`บันทึกแผนไลน์ ${S.P.line} วันผลิต ${dateShort(S.P.date)} แล้ว (${data} ชั่วโมงที่เปลี่ยน)`, 'ok');
+  await loadPlan();
+}
+
+/* ============================================================================
+ *  เมนู 3: Dashboard (Realtime ทุกไลน์)
+ * ========================================================================== */
+const D = { date: null, follow: true, recs: [], line: null, seq: 0, at: null };
+let RZ = null;
+window.addEventListener('resize', () => { clearTimeout(RZ); RZ = setTimeout(() => { if (S.view === 'dash' && D.line) drawLineChart(); }, 200); });
+
+async function showDash() {
+  if (S.view === 'dash') { if (D.line) { D.line = null; renderDashBody(); } return; }
+  if (S.dirty && !(await ask('ยังไม่ได้บันทึก', 'ข้อมูลรายชั่วโมงที่กรอกค้างไว้จะหายไป — ไปหน้า Dashboard เลย?', 'ไป Dashboard'))) return;
+  if (S.view === 'plan' && planDirtyCount() && !(await ask('ยังไม่ได้บันทึกแผน', 'แผนที่แก้ไว้จะหายไป — ไปหน้า Dashboard เลย?', 'ไป Dashboard'))) return;
+  S.dirty = false; S.P.rows = {}; S.P.orig = {};
+  S.view = 'dash'; setTab();
+  if (!D.date) { D.date = curProd().date; D.follow = true; }
+  renderDashShell();
+  await loadDash();
+}
+function renderDashShell() {
+  const cur = curProd().date;
+  $('#view').innerHTML = `
+    <div class="bar">
+      <div class="dnav">
+        <button id="dsPrev" aria-label="วันก่อนหน้า">‹</button>
+        <input type="date" class="in date" id="dsDate" value="${D.date}" max="${cur}">
+        <button id="dsNext" aria-label="วันถัดไป">›</button>
+      </div>
+      ${D.date !== cur ? '<button class="btn" id="dsToday">กลับวันผลิตปัจจุบัน</button>' : ''}
+      <span class="dlabel">วันผลิต ${dateLong(D.date)}</span>
+      <span class="sp"></span>
+      <span class="upd" id="dsUpd"></span>
+    </div>
+    <div id="dashBody"><div class="spin"></div></div>`;
+  const setDate = d => {
+    if (!d) return;
+    if (d > cur) d = cur;
+    D.date = d; D.follow = d === cur; D.recs = [];
+    renderDashShell(); loadDash();
+  };
+  $('#dsDate').onchange = e => setDate(e.target.value);
+  $('#dsPrev').onclick = () => setDate(addDays(D.date, -1));
+  $('#dsNext').onclick = () => setDate(addDays(D.date, 1));
+  const t = $('#dsToday'); if (t) t.onclick = () => setDate(cur);
+}
+async function loadDash() {
+  const my = ++D.seq;
+  const { data, error } = await sb.from('hourly_records').select('*').eq('prod_date', D.date).limit(5000);
+  if (my !== D.seq || S.view !== 'dash') return;
+  if (error) { toast('โหลด Dashboard ไม่สำเร็จ: ' + errMsg(error), 'err'); return; }
+  D.recs = data || []; D.at = new Date();
+  renderDashBody();
+}
+/** นาทีที่เครื่องเสีย = ซ่อมเสร็จ − เริ่มเสีย (ข้ามเที่ยงคืนได้) · ยังไม่เสร็จ = null */
+function bdMin(r) {
+  if (!r.bd_start || !r.bd_end) return null;
+  const m = v => { const [h, mi] = String(v).split(':').map(Number); return h * 60 + mi; };
+  return (m(r.bd_end) - m(r.bd_start) + 1440) % 1440;
+}
+function lineStats(code) {
+  const by = {};
+  D.recs.filter(r => r.line_code === code).forEach(r => { by[r.hour] = r; });
+  const s = { code, by, plan: 0, planM: 0, actIn: 0, act: 0, miss: 0, done: 0, nPlan: 0, bdN: 0, bdOpen: 0, dt: 0, last: null };
+  HOURS.forEach(h => {
+    const r = by[h] || {}, p = num(r.plan_qty), a = num(r.actual_qty);
+    if (p > 0) { s.plan += p; s.nPlan++; }
+    if (a !== null) { s.act += a; s.done++; s.last = h; if (p > 0) { s.planM += p; s.actIn += a; } }
+    if (a === null && p > 0 && slotState(D.date, h) === 'past') s.miss++;
+    if (r.bd_machine) { s.bdN++; if (r.bd_status === 'open') s.bdOpen++; s.dt += bdMin(r) || 0; }
+  });
+  s.ach = s.planM > 0 ? s.actIn / s.planM : null;
+  s.prog = s.plan > 0 ? s.act / s.plan : null;
+  // Product ที่กำลังเดิน = ชั่วโมงล่าสุดที่บันทึก Actual (ถ้ายังไม่มี ใช้ Product ของชั่วโมงปัจจุบันตามแผน)
+  const c = curProd(), curR = D.date === c.date ? by[c.hour] : null;
+  s.product = (s.last !== null && by[s.last].product) || (curR && curR.product) || '';
+  return s;
+}
+function stripCell(s, h) {
+  const r = s.by[h] || {}, p = num(r.plan_qty), a = num(r.actual_qty), st = slotState(D.date, h);
+  let cls = '';
+  if (a !== null) cls = p > 0 ? achCls(a / p) : 'ex';
+  else if (p > 0 && st === 'past') cls = 'miss';
+  else if (p > 0) cls = 'plan';
+  if (st === 'current') cls += ' cur';
+  const tip = `${slotLabel(h)} · Plan ${fmt(p)} · Actual ${fmt(a)}${a !== null && p > 0 ? ' · ' + pct(a / p) : ''}${r.remark_code ? ' · ' + r.remark_code : ''}`;
+  return `<i class="${cls}" title="${esc(tip)}"></i>`;
+}
+function renderDashBody() {
+  const box = $('#dashBody'); if (!box) return;
+  const u = $('#dsUpd');
+  if (u && D.at) u.innerHTML = `<i></i>อัปเดต ${pad(D.at.getHours())}:${pad(D.at.getMinutes())} น. · ${S.live ? 'Realtime' : 'รีเฟรชทุก 30 วิ'}`;
+  if (D.line) return renderLineDetail(box);
+  const stats = S.lines.map(l => lineStats(l.code));
+  const achs = stats.map(s => s.ach).filter(v => v !== null);
+  const avg = achs.length ? achs.reduce((a, b) => a + b, 0) / achs.length : null;
+  const active = stats.filter(s => s.done > 0).length;
+  const miss = stats.reduce((a, s) => a + s.miss, 0), bdOpen = stats.reduce((a, s) => a + s.bdOpen, 0);
+  const bdN = stats.reduce((a, s) => a + s.bdN, 0), dt = stats.reduce((a, s) => a + s.dt, 0);
+
+  const cards = stats.map(s => {
+    const cls = achCls(s.ach);
+    return `<button class="lc ${cls === 'na' ? '' : cls} ${s.bdOpen ? 'alarm' : ''}" data-line="${esc(s.code)}">
+      <div class="lc-h"><span class="lc-n">${esc(s.code)}</span>
+        <span class="bdgs">${s.bdOpen ? `<span class="bdg red">● เครื่องเสียค้าง ${s.bdOpen}</span>` : ''}${s.miss ? `<span class="bdg amber">ยังไม่กรอก ${s.miss} ชม.</span>` : ''}${!s.nPlan ? '<span class="bdg gray">ไม่มีแผน</span>' : ''}</span></div>
+      <div class="lc-p">${s.product ? `▶ <b>${esc(s.product)}</b>` : '&nbsp;'}</div>
+      <div class="lc-m"><span class="lc-a num c-${cls}">${pct(s.ach)}<small>Ach.</small></span>
+        <span class="lc-v" title="เฉพาะชั่วโมงที่บันทึก Actual แล้ว">Actual / Plan<b class="num">${fmt(s.actIn)} / ${fmt(s.planM)}</b></span></div>
+      <div class="strip">${HOURS.map(h => stripCell(s, h)).join('')}</div>
+      <div class="strip-lb"><span>08</span><span>14</span><span>20</span><span>02</span><span>07</span></div>
+      <div class="lc-f"><span class="num">ทั้งวัน ${fmt(s.act)} / ${fmt(s.plan)} (${pct(s.prog)})</span><span>${s.last !== null ? 'ล่าสุด ' + pad(s.last) + '.00' : 'ยังไม่บันทึก'}</span></div>
+      <div class="pbar"><i style="width:${s.prog === null ? 0 : Math.min(100, s.prog * 100).toFixed(1)}%"></i></div>
+    </button>`;
+  }).join('');
+
+  // เหตุผลที่ไม่ได้ตามแผน (นับชั่วโมง — ไม่รวมยอดข้ามไลน์ เพราะหน่วยอาจต่างกัน)
+  const rc = {};
+  D.recs.forEach(r => { if (r.remark_code) rc[r.remark_code] = (rc[r.remark_code] || 0) + 1; });
+  const rcs = Object.keys(rc).sort((a, b) => rc[b] - rc[a]), rmax = rcs.length ? rc[rcs[0]] : 1;
+  const bds = D.recs.filter(r => r.bd_machine).sort((a, b) => (a.bd_status === 'open' ? 0 : 1) - (b.bd_status === 'open' ? 0 : 1) || hk(a.hour) - hk(b.hour));
+
+  box.innerHTML = `
+    <section class="kpis">
+      <div class="kpi"><small>%Achievement (เฉลี่ยทุกไลน์)</small><b class="num c-${achCls(avg)}">${pct(avg)}</b><span>${achs.length} ไลน์ที่มีแผนและบันทึกแล้ว</span></div>
+      <div class="kpi"><small>ไลน์ที่บันทึกข้อมูล</small><b class="num">${active} <span style="font-size:15px">/ ${S.lines.length}</span></b><span>มี Actual อย่างน้อย 1 ชม.</span></div>
+      <div class="kpi"><small>ชั่วโมงที่ยังไม่กรอก (ทุกไลน์)</small><b class="num ${miss ? 'c-bad' : 'c-good'}">${miss}</b><span>${miss ? 'ผ่านไปแล้วแต่ยังไม่มี Actual' : 'ครบทุกไลน์'}</span></div>
+      <div class="kpi"><small>เครื่องเสียค้าง</small><b class="num ${bdOpen ? 'c-bad' : 'c-good'}">${bdOpen}</b><span>ทั้งวัน ${bdN} ครั้ง · Downtime ${fmt(dt)} นาที</span></div>
+    </section>
+    <div class="lgrid">${cards}</div>
+    <div class="dgrid">
+      <section class="card">
+        <div class="ch"><h3>เครื่องเสีย (${bds.length})</h3><p class="hint">ค้างซ่อมแสดงก่อน</p></div>
+        ${bds.length ? `<div class="tblw"><table><thead><tr><th>ไลน์</th><th>ชั่วโมง</th><th>เครื่อง / อาการ</th><th>เริ่มเสีย</th><th>ซ่อมเสร็จ</th><th class="r">นาที</th><th>สถานะ</th><th>ผู้บันทึก</th></tr></thead><tbody>
+          ${bds.map(r => `<tr><td><b>${esc(r.line_code)}</b></td><td class="num">${pad(r.hour)}.00</td><td class="wrap">${esc(r.bd_machine)}</td>
+            <td class="num">${t5(r.bd_start) || '–'}</td><td class="num">${t5(r.bd_end) || '–'}</td><td class="r num">${bdMin(r) !== null ? bdMin(r) : '–'}</td>
+            <td><span class="pill ${r.bd_status === 'open' ? 'open' : 'done'}">${r.bd_status === 'open' ? 'ยังไม่เสร็จ' : 'เสร็จแล้ว'}</span></td><td>${esc(r.actual_by || '–')}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="empty">✓ ไม่มีเครื่องเสียในวันผลิตนี้</div>'}
+      </section>
+      <section class="card">
+        <div class="ch"><h3>เหตุผลที่บันทึก</h3><p class="hint">จำนวนชั่วโมง · ทุกไลน์</p></div>
+        ${rcs.length ? `<div class="par">${rcs.map(k => `<span>${esc(k)}</span><span class="bar2"><i style="width:${(rc[k] / rmax * 100).toFixed(0)}%"></i></span><b class="r num">${rc[k]} ชม.</b>`).join('')}</div>`
+          : '<div class="empty">ยังไม่มีการบันทึกเหตุผล</div>'}
+      </section>
+    </div>`;
+  $$('.lc', box).forEach(b => b.onclick = () => { D.line = b.dataset.line; renderDashBody(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+}
+function renderLineDetail(box) {
+  const s = lineStats(D.line), cls = achCls(s.ach);
+  box.innerHTML = `
+    <div class="bar"><button class="btn" id="dsBack">‹ ภาพรวมทุกไลน์</button><span class="linebadge">ไลน์ ${esc(D.line)}</span>${s.product ? `<span class="dlabel">▶ ${esc(s.product)}</span>` : ''}</div>
+    <section class="kpis">
+      <div class="kpi"><small>%Achievement (ชม.ที่บันทึก)</small><b class="num c-${cls}">${pct(s.ach)}</b><span class="num">${fmt(s.actIn)} / ${fmt(s.planM)}</span></div>
+      <div class="kpi"><small>ความคืบหน้าแผนทั้งวัน</small><b class="num">${pct(s.prog)}</b><span class="num">${fmt(s.act)} / ${fmt(s.plan)}</span>
+        <div class="pbar"><i style="width:${s.prog === null ? 0 : Math.min(100, s.prog * 100).toFixed(1)}%"></i></div></div>
+      <div class="kpi"><small>ชั่วโมงที่ยังไม่กรอก</small><b class="num ${s.miss ? 'c-bad' : 'c-good'}">${s.miss}</b><span>บันทึกแล้ว ${s.done} / แผน ${s.nPlan} ชม.</span></div>
+      <div class="kpi"><small>Downtime</small><b class="num ${s.dt ? 'c-bad' : ''}">${fmt(s.dt)} <span style="font-size:15px">นาที</span></b><span>${s.bdN} ครั้ง · ค้าง ${s.bdOpen}</span></div>
+    </section>
+    <section class="card" style="margin-bottom:14px">
+      <div class="ch"><h3>Plan vs Actual รายชั่วโมง</h3>
+        <div class="legend"><span><i style="background:#7AA5D3;height:3px;vertical-align:3px"></i>Plan</span><span><i style="background:var(--green)"></i>Actual ≥ 95%</span><span><i style="background:var(--amber)"></i>≥ 85%</span><span><i style="background:var(--red)"></i>ต่ำกว่า</span></div></div>
+      <div class="chart" id="lnChart"></div>
+    </section>
+    <section class="card">
+      <div class="ch"><h3>บันทึกรายชั่วโมง</h3></div>
+      <div class="tblw"><table><thead><tr><th>เวลา</th><th>Product</th><th class="r">Plan</th><th class="r">Actual</th><th class="r">%Ach</th><th>เหตุผล / Remark</th><th>เครื่องเสีย</th><th>ผู้บันทึก</th></tr></thead><tbody>
+        ${HOURS.map(h => {
+          const r = s.by[h] || {}, p = num(r.plan_qty), a = num(r.actual_qty), st = slotState(D.date, h);
+          if (p === null && a === null && !r.product) return '';
+          const miss = a === null && p > 0 && st === 'past';
+          return `<tr${miss ? ' style="background:#FFF5F6"' : ''}><td class="num"><b>${slotLabel(h)}</b></td><td>${esc(r.product || '–')}</td>
+            <td class="r num">${fmt(p)}</td><td class="r num">${miss ? '<b class="c-bad">ยังไม่กรอก</b>' : fmt(a)}</td>
+            <td class="r num c-${a !== null && p > 0 ? achCls(a / p) : 'na'}">${a !== null && p > 0 ? pct(a / p) : '–'}</td>
+            <td class="wrap">${esc([r.remark_code, r.remark].filter(Boolean).join(' · ') || '–')}</td>
+            <td class="wrap">${r.bd_machine ? `<span class="pill ${r.bd_status === 'open' ? 'open' : 'done'}">${esc(r.bd_machine)}${bdMin(r) !== null ? ' · ' + bdMin(r) + ' น.' : ''}</span>` : '–'}</td>
+            <td>${esc(r.actual_by || '–')}</td></tr>`;
+        }).join('') || '<tr><td colspan="8"><div class="empty">ยังไม่มีแผนหรือข้อมูลของวันผลิตนี้</div></td></tr>'}
+      </tbody></table></div>
+    </section>`;
+  $('#dsBack').onclick = () => { D.line = null; renderDashBody(); };
+  drawLineChart();
+}
+function niceMax(v) {
+  if (!(v > 0)) return 1;
+  const t = v / 4, p = Math.pow(10, Math.floor(Math.log10(t))), n = t / p;
+  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(x => x >= n - 1e-9) * p;
+  return step * 4;
+}
+/** กราฟ Plan (เส้นจุด) vs Actual (แท่ง สีตาม %Ach) — SVG ไม่ต้องโหลด library */
+function drawLineChart() {
+  const el = $('#lnChart'); if (!el || !D.line) return;
+  const s = lineStats(D.line);
+  const items = HOURS.map(h => { const r = s.by[h] || {}; return { h, p: num(r.plan_qty), a: num(r.actual_qty) }; });
+  if (!items.some(x => x.p !== null || x.a !== null)) { el.innerHTML = '<div class="empty">ยังไม่มีแผนหรือ Actual</div>'; return; }
+  const W = Math.max(560, el.clientWidth || 800), H = 270, L = 52, R = 12, T = 22, B = 30;
+  const pw = W - L - R, ph = H - T - B, slot = pw / 24;
+  const max = niceMax(Math.max(...items.map(x => Math.max(x.p || 0, x.a || 0))) * 1.1);
+  const x = i => L + slot * (i + .5), y = v => T + ph - Math.max(0, v) / max * ph;
+  const col = { good: '#16A34A', warn: '#E08A00', bad: '#DC2F3C', na: '#2563EB' };
+  let g = '';
+  for (let k = 0; k <= 4; k++) {
+    const v = max * k / 4, yy = y(v).toFixed(1);
+    g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#E9EEF4" stroke-dasharray="3 5"/><text x="${L - 8}" y="${+yy + 4}" text-anchor="end" font-size="11" fill="#9AAABD">${fmt(v)}</text>`;
+  }
+  const bw = Math.min(30, slot * .6);
+  items.forEach((d, i) => {
+    if (i % 2 === 0 || slot > 34) g += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="#788FA5">${pad(d.h)}</text>`;
+    if (d.a === null) return;
+    const c = col[d.p > 0 ? achCls(d.a / d.p) : 'na'], yy = y(d.a);
+    g += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, T + ph - yy).toFixed(1)}" rx="4" fill="${c}"><title>${slotLabel(d.h)} · Plan ${fmt(d.p)} · Actual ${fmt(d.a)}${d.p > 0 ? ' · ' + pct(d.a / d.p) : ''}</title></rect>`;
+    if (slot > 26) g += `<text x="${x(i)}" y="${Math.max(12, yy - 5).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="${c}">${fmt(d.a)}</text>`;
+  });
+  let seg = [];
+  const flush = () => { if (seg.length) g += `<path d="${seg.join(' ')}" fill="none" stroke="#7AA5D3" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round"/>`; seg = []; };
+  items.forEach((d, i) => { if (d.p !== null) seg.push(`${seg.length ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.p).toFixed(1)}`); else flush(); });
+  flush();
+  items.forEach((d, i) => { if (d.p !== null) g += `<circle cx="${x(i).toFixed(1)}" cy="${y(d.p).toFixed(1)}" r="3.6" fill="#7AA5D3" stroke="#fff" stroke-width="1.5"/>`; });
+  const c = curProd();
+  if (D.date === c.date) { const xi = x(hk(c.hour)); g += `<line x1="${xi}" x2="${xi}" y1="${T - 6}" y2="${T + ph}" stroke="#1E3A6E" stroke-width="1.5" stroke-dasharray="4 4"/><text x="${xi}" y="${T - 9}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E3A6E">ตอนนี้</text>`; }
+  el.innerHTML = `<div style="overflow-x:auto"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Plan vs Actual รายชั่วโมง ไลน์ ${esc(D.line)}">${g}</svg></div>`;
+}
+
+start();
+</script>
+</body>
+</html>
